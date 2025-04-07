@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="我的Flutter任务管理应用">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="任务管理">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>任务管理应用</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    const serviceWorkerVersion = "3483878042";
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
+  
+  <!-- Supabase认证处理脚本 -->
+  <script>
+    /**
+     * 增强版Supabase认证处理函数
+     * 处理不同类型的认证回调和参数
+     */
+    function handleSupabaseAuth() {
+      console.log('检查Supabase认证状态...');
+      console.log('当前URL:', window.location.href);
+      
+      // 从hash参数中获取认证信息（implicit flow使用）
+      if (window.location.hash.indexOf('access_token') > -1) {
+        console.log('从Hash参数中发现认证信息');
+        const params = new URLSearchParams(window.location.hash.substring(1));
+        saveAuthData(params);
+        return;
+      }
+      
+      // 从查询参数中获取认证信息（OAuth回调使用）
+      if (window.location.search.indexOf('refresh_token') > -1 || 
+          window.location.search.indexOf('access_token') > -1) {
+        console.log('从查询参数中发现认证信息');
+        const params = new URLSearchParams(window.location.search);
+        saveAuthData(params);
+        return;
+      }
+      
+      // 特别处理错误情况
+      if (window.location.search.indexOf('error=') > -1) {
+        console.error('认证错误:', window.location.search);
+        // 可以在这里添加错误处理代码
+        window.history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+      
+      console.log('未发现认证参数');
+    }
+    
+    /**
+     * 保存认证数据到localStorage
+     */
+    function saveAuthData(params) {
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const expiresIn = params.get('expires_in');
+      const tokenType = params.get('token_type') || 'bearer';
+      
+      if (!accessToken && !refreshToken) {
+        console.log('未找到有效的认证令牌');
+        return;
+      }
+      
+      console.log('找到认证令牌，正在保存...');
+      
+      // 组装session数据
+      const session = {};
+      
+      if (accessToken) session.access_token = accessToken;
+      if (refreshToken) session.refresh_token = refreshToken;
+      if (expiresIn) session.expires_in = expiresIn;
+      if (tokenType) session.token_type = tokenType;
+      
+      try {
+        // 保存到localStorage
+        localStorage.setItem('supabase.auth.token', JSON.stringify(session));
+        console.log('认证数据已保存到localStorage');
+        
+        // 清除URL中的认证参数
+        window.history.replaceState(null, '', window.location.pathname);
+        console.log('URL已清理');
+      } catch (e) {
+        console.error('保存认证数据失败:', e);
+      }
+    }
+    
+    // 页面加载时初始化认证处理
+    window.addEventListener('load', function() {
+      handleSupabaseAuth();
+    });
+  </script>
+</head>
+<body>
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
